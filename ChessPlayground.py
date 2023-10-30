@@ -1,29 +1,33 @@
 import chess
+import chess.svg
+import chess.pgn
+import MiniMax
 from EvaluatePos import *
-from ChessBot import *
 
+count = 0
+movehistory = []
+game = chess.pgn.Game()
 board = chess.Board()
-print(board.fen)
+while not board.is_game_over():
+    if board.turn:
+        count += 1
+        print(f'\n{count}]\n')
+        move = MiniMax.move(board, 3)
+        board.push(move)
+        print(board)
+        print()
+    else:
+        move = MiniMax.move(board, 3)
+        board.push(move)
+        print(board)
+        
+game.add_line(movehistory)
+game.headers["Event"] = "Self Tournament 2020"
+game.headers["Site"] = "Pune"
+game.headers["Round"] = 1
+game.headers["White"] = "Ai"
+game.headers["Black"] = "Ai"
+game.headers["Result"] = str(board.result())
+print(game)
+print(board.outcome())
 
-
-def check_game_end(board):
-    if board.is_checkmate():
-        if board.turn:
-            return -9999 #black wins
-        else:
-            return 9999 #white wins
-
-    if board.is_stalemate():
-        return 0
-    if board.is_insufficient_material():
-        return 0
-
-indv_scores = calc_indv_score(board)
-piece_count, mat_score = calc_total_mat(board)
-advantage = calc_advantage(board, indv_scores, mat_score)
-
-print(indv_scores)
-print(piece_count, mat_score)
-print(advantage)
-
-print(move_in_book(board))
