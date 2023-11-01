@@ -2,9 +2,11 @@ import chess
 import chess.svg
 import chess.pgn
 import MiniMax
+import random
 from EvaluatePos import *
 
 count = 0
+depth = 5
 movehistory = []
 game = chess.pgn.Game()
 board = chess.Board()
@@ -12,13 +14,12 @@ while not board.is_game_over():
     if board.turn:
         count += 1
         print(f'\n{count}]\n')
-        move = MiniMax.move(board, 3)
+        move = MiniMax.move(board, depth)
         board.push(move)
         print(board)
         print()
     else:
-        move = MiniMax.move(board, 3)
-        board.push(move)
+        board.push(random.choice(list(board.legal_moves)))
         print(board)
         
 game.add_line(movehistory)
