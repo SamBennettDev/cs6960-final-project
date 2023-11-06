@@ -2,15 +2,18 @@ import chess
 import chess.svg
 import chess.pgn
 import RandomBot
+from ChessBot import ChessBot
+from ChessBotModel import ChessBotModel
 from EvaluatePos import *
 from Visualize import *
 
 count = 0
-depth = 5
 movehistory = []
 game = chess.pgn.Game()
 board = chess.Board()
 chess_drawer = ChessBoardDrawer(600, 600, board)
+model = ChessBotModel()
+sam_bot = ChessBot(model, "Sam")
 
 while not board.is_game_over():
     count += 1
@@ -21,7 +24,7 @@ while not board.is_game_over():
         print(board)
         print()
     else:
-        board.push(RandomBot.move(board))
+        board.push(sam_bot.make_move(board))
         chess_drawer.update_display()
         print(board)
     print(calc_advantage(board))
