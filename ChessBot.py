@@ -10,7 +10,6 @@ class ChessBot:
         try:
             self.load_model()
         except:
-            print('fail')
             self.save_model()
 
         
