@@ -13,8 +13,6 @@ def trainBot(bot, num_games):
     for i in range(num_games):
 
         while not board.is_game_over():
-            # count += 1
-            # print(f"\n{count}]\n")
             if board.turn:  # whites turn
                 bef_adv = calc_advantage(board)
                 bot_move = bot.make_move(board)
@@ -27,7 +25,9 @@ def trainBot(bot, num_games):
                 board.pop()
                 trainer_move = chess.Move.from_uci(
                         input(
-                            "What's a better move? ["
+                            "Bot made move " 
+                            + str(bot_move)
+                            + "\nWhat's a better move? ["
                             + str([board.uci(move) for move in board.legal_moves])
                             + "]    "
                         )
