@@ -5,8 +5,9 @@ import RandomBot
 from ChessBot import ChessBot
 from EvaluatePos import *
 from Visualize import *
+from stockfish import Stockfish
 
-def trainBot(bot, num_games):
+def trainBot(bot, num_games, human=True):
     board = chess.Board()
     chess_drawer = ChessBoardDrawer(600, 600, board)
     bot.save_model()
@@ -23,15 +24,21 @@ def trainBot(bot, num_games):
                 # print(board)
                 print("advantage change " + str(adv_change))
                 board.pop()
-                trainer_move = chess.Move.from_uci(
-                        input(
-                            "Bot made move " 
-                            + str(bot_move)
-                            + "\nWhat's a better move? ["
-                            + str([board.uci(move) for move in board.legal_moves])
-                            + "]    "
+
+                if human:
+                    trainer_move = chess.Move.from_uci(
+                            input(
+                                "Bot made move " 
+                                + str(bot_move)
+                                + "\nWhat's a better move? ["
+                                + str([board.uci(move) for move in board.legal_moves])
+                                + "]    "
+                            )
                         )
-                    )
+                else:
+                    stockfish.set_fen_position(board.fen())
+                    trainer_move = stockfish.get_best_move()
+
                 board.push(trainer_move)
                 trainer_after_adv = -calc_advantage(board)
                 trainer_adv_change = trainer_after_adv - bef_adv
@@ -49,5 +56,8 @@ def trainBot(bot, num_games):
             
         print(board.outcome())
 
+stockfish = Stockfish(path='stockfish/')
 sam_bot = ChessBot("sam")
-trainBot(sam_bot, 20)
+stockfish_bot = ChessBot("stockfish")
+#trainBot(sam_bot, 10) #train by human
+trainBot(stockfish_bot, 1000, False) # train by stockfish
