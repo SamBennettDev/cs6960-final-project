@@ -10,6 +10,7 @@ class ChessBot:
         try:
             self.load_model()
         except:
+            print('fail')
             self.save_model()
 
         
@@ -18,9 +19,9 @@ class ChessBot:
         path = 'models/' + self.trainer_name + '.pth'
         torch.save(self.model.state_dict(), path)
     
-    def load_model(self, model_path):
+    def load_model(self):
         path = 'models/' + self.trainer_name + '.pth'
-        self.model.load_state_dict(path)
+        self.model.load_state_dict(torch.load(path))
         self.model.eval()
 
     def make_move(self, board):
