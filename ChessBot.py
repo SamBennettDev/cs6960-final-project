@@ -1,10 +1,27 @@
 import torch
 import chess
+from ChessBotModel import ChessBotModel
 
 class ChessBot:
-    def __init__(self, model, trainer_name):
+    def __init__(self, trainer_name):
         self.trainer_name = trainer_name
-        self.model = model
+        self.model = ChessBotModel()
+        # check if model exists
+        try:
+            self.load_model()
+        except:
+            self.save_model()
+
+        
+    
+    def save_model(self):
+        path = 'models/' + self.trainer_name + '.pth'
+        torch.save(self.model.state_dict(), path)
+    
+    def load_model(self, model_path):
+        path = 'models/' + self.trainer_name + '.pth'
+        self.model.load_state_dict(path)
+        self.model.eval()
 
     def make_move(self, board):
         legal_moves = list(board.legal_moves)
@@ -66,10 +83,3 @@ class ChessBot:
         # Train your neural network using the collected feedback and data
         # You'll need to define your own training pipeline based on your specific project requirements
         pass
-
-    def save_model(self, model_path):
-        torch.save(self.model.state_dict(), model_path)
-
-    def load_model(self, model_path):
-        self.model.load_state_dict(torch.load(model_path))
-        self.model.eval()
