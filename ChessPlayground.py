@@ -56,8 +56,8 @@ def trainBot(bot, num_games, human=True):
             
         print(board.outcome())
 
-stockfish = Stockfish(path='stockfish/')
+#stockfish = Stockfish(path='stockfish/')
 sam_bot = ChessBot("sam")
 stockfish_bot = ChessBot("stockfish")
-#trainBot(sam_bot, 10) #train by human
-trainBot(stockfish_bot, 1000, False) # train by stockfish
+trainBot(sam_bot, 10) #train by human
+#trainBot(stockfish_bot, 1000, False) # train by stockfish
