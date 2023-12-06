@@ -10,7 +10,7 @@ from utils import *
 
 def trainBot(bot, num_games, human=True):
     board = chess.Board()
-    #chess_drawer = ChessBoardDrawer(600, 600, board)
+    chess_drawer = ChessBoardDrawer(600, 600, board)
     bot.save_model()
     for i in range(num_games):
 
@@ -21,8 +21,7 @@ def trainBot(bot, num_games, human=True):
                 board.push(bot_move)
                 after_adv = -calc_advantage(board)
                 adv_change = after_adv - bef_adv
-                #chess_drawer.update_display()
-                print(board)
+                chess_drawer.update_display()
                 print("advantage change " + str(adv_change))
                 board.pop()
 
@@ -43,10 +42,10 @@ def trainBot(bot, num_games, human=True):
                 board.push(trainer_move)
                 trainer_after_adv = -calc_advantage(board)
                 trainer_adv_change = trainer_after_adv - bef_adv
-                reward = adv_change - trainer_adv_change
-                print("reward: " + str(reward))
+                penalty = trainer_adv_change - adv_change
+                print("reward: " + str(penalty))
 
-                #chess_drawer.update_display()
+                chess_drawer.update_display()
 
                 # print(board)
                 # print()
