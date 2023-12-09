@@ -1,10 +1,38 @@
+import logging
+import time
+
 import torch
 import chess
 import numpy as np
-from ChessBotModel import ChessBotModel
+from torch import optim
+from torch.utils.tensorboard import SummaryWriter
 
-class ChessBot:
+from ChessBotModel import ChessBotModel
+from utils import AverageMeter
+
+writer = SummaryWriter()
+# set up logging to file
+logging.basicConfig(level=logging.DEBUG)
+# define a Handler which writes INFO messages or higher to the sys.stderr
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+# add the handler to the root logger
+logging.getLogger('').addHandler(console)
+log = logging.getLogger(__name__)
+
+
+
+
+class ChessBot(object):
     def __init__(self, trainer_name):
+        super(ChessBot, self).__init__()
+        self.use_cuda = torch.cuda.is_available()
+
+        print("=======================================================================")
+        print(f"Using CUDA: {torch.cuda.is_available()}")
+        print("=======================================================================")
+
+
         self.trainer_name = trainer_name
         self.model = ChessBotModel()
         # check if model exists
@@ -12,11 +40,14 @@ class ChessBot:
             self.load_model()
         except:
             self.save_model()
+        if self.use_cuda:
+            self.model.cuda()
 
     def save_model(self):
         path = 'models/' + self.trainer_name + '.pth'
+        print(f"Saving model {self.trainer_name} as {path}.")
         torch.save(self.model.state_dict(), path)
-    
+
     def load_model(self):
         path = 'models/' + self.trainer_name + '.pth'
         self.model.load_state_dict(torch.load(path))
@@ -40,9 +71,8 @@ class ChessBot:
 
         return chess.Move(from_sq, to_sq)
 
-
     def select_best_move(self, board, legal_moves):
-    # Convert the board and legal moves into a format suitable for your model
+        # Convert the board and legal moves into a format suitable for your model
         board_tensor = self.board_to_tensor(board)
         valid_tensor = self.moves_to_tensor(board)
 
@@ -67,34 +97,38 @@ class ChessBot:
         return best_move
 
     def from_move(self, move):
-        return move.from_square*64+move.to_square
+        return move.from_square * 64 + move.to_square
 
-    def moves_to_tensor(self, board):        
-        acts = [0] * (64*64)
+    def moves_to_tensor(self, board):
+        acts = [0] * (64 * 64)
         for move in board.legal_moves:
-          acts[self.from_move(move)] = 1
+            acts[self.from_move(move)] = 1
 
         moves_tensor = torch.FloatTensor(np.array(acts))
-        
+
         return moves_tensor
-    
+
     def to_np(self, board):
-        a = [0] * (8*8*6)
+        a = [0] * (8 * 8 * 6)
         for sq, pc in board.piece_map().items():
             a[sq * 6 + pc.piece_type - 1] = 1 if pc.color else -1
         return np.array(a)
-        
+
     def board_to_tensor(self, board):
         np_board = self.to_np(board)
         board_tensor = torch.FloatTensor(np_board)
 
         return board_tensor
 
+    def loss_pi(self, targets, outputs):
+        """Custom loss function for probabilty distribuition"""
+        return -torch.sum(targets * outputs) / targets.size()[0]
 
+    def loss_v(self, targets, outputs):
+        """Custom loss function for scalar value"""
+        return torch.sum((targets - outputs.view(-1)) ** 2) / targets.size()[0]
 
-
-
-    def train(self, examples):
+    def train(self, examples, epochs, batch_size):
         """
             Train on `examples`
             
@@ -102,11 +136,11 @@ class ChessBot:
                 examples: list of examples, each example is of form 
                 (board, pi, v, valids)
         """
-        optimizer = optim.Adam(self.nnet.parameters())
+        optimizer = optim.Adam(self.model.parameters())
 
-        for epoch in range(args.epochs):
-            print('EPOCH ::: ' + str(epoch+1))
-            self.nnet.train()
+        for epoch in range(epochs):
+            print('EPOCH ::: ' + str(epoch + 1))
+            self.model.train()
             data_time = AverageMeter()
             batch_time = AverageMeter()
             pi_losses = AverageMeter()
@@ -115,22 +149,26 @@ class ChessBot:
 
             batch_idx = 0
 
-            while batch_idx < int(len(examples) / args.batch_size):
-                sample_ids = np.random.randint(len(examples), size=args.batch_size)
+            while batch_idx < int(len(examples) / batch_size):
+                sample_ids = np.random.randint(len(examples), size=batch_size)
                 boards, pis, vs, valids = list(zip(*[examples[i] for i in sample_ids]))
                 boards = torch.FloatTensor(np.array(boards).astype(np.float64))
                 target_pis = torch.FloatTensor(np.array(pis))
                 target_vs = torch.FloatTensor(np.array(vs).astype(np.float64))
                 target_valids = torch.FloatTensor(np.array(valids))
 
-                # Cuda performance improvement
-                boards, target_pis, target_vs, target_valids = boards.contiguous().cuda(), target_pis.contiguous().cuda(), target_vs.contiguous().cuda(), target_valids.contiguous().cuda()
+                if self.use_cuda:
+                    # Cuda performance improvement
+                    boards, target_pis, target_vs, target_valids = boards.contiguous().cuda(), target_pis.contiguous().cuda(), target_vs.contiguous().cuda(), target_valids.contiguous().cuda()
+                else:
+                    boards, target_pis, target_vs, target_valids = boards.contiguous(), target_pis.contiguous(), target_vs.contiguous(), target_valids.contiguous()
+
 
                 # measure data loading time
                 data_time.update(time.time() - end)
 
                 # compute output
-                out_pi, out_v = self.nnet((boards, target_valids))
+                out_pi, out_v = self.model((boards, target_valids))
                 l_pi = self.loss_pi(target_pis, out_pi)
                 l_v = self.loss_v(target_vs, out_v)
                 total_loss = l_pi + l_v
@@ -141,7 +179,7 @@ class ChessBot:
                 writer.add_scalar("Loss/train", l_pi.item(), batch_idx)
                 writer.add_scalar("Loss/train", l_v.item(), batch_idx)
                 writer.flush()
-                
+
                 # compute gradient and do SGD step
                 optimizer.zero_grad()
                 total_loss.backward()
@@ -153,13 +191,14 @@ class ChessBot:
                 batch_idx += 1
 
                 # plot progress
-                log.info('({epoch}: {batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Loss_pi: {lpi:.4f} | Loss_v: {lv:.3f} | Total Loss: {tl:.4f}'.format(
-                            batch=batch_idx,
-                            size=int(len(examples)/args.batch_size),
-                            data=data_time.avg,
-                            bt=batch_time.avg,
-                            lpi=pi_losses.avg,
-                            lv=v_losses.avg,
-                            tl=total_loss,
-                            epoch=epoch+1
-                            ))
+                log.info(
+                    '({epoch}: {batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Loss_pi: {lpi:.4f} | Loss_v: {lv:.3f} | Total Loss: {tl:.4f}'.format(
+                        batch=batch_idx,
+                        size=int(len(examples) / batch_size),
+                        data=data_time.avg,
+                        bt=batch_time.avg,
+                        lpi=pi_losses.avg,
+                        lv=v_losses.avg,
+                        tl=total_loss,
+                        epoch=epoch + 1
+                    ))
