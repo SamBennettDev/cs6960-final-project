@@ -72,6 +72,7 @@ class ChessBoardDrawer:
                         )
 
     def update_display(self):
+        pygame.event.wait()
         self.screen.fill((0, 0, 0))
         self.draw_chessboard()
         self.draw_rank_and_file_labels()

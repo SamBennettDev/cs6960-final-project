@@ -2,6 +2,7 @@
     Util Classes/functions for luna
 """
 
+
 class AverageMeter(object):
     """From https://github.com/pytorch/examples/blob/master/imagenet/main.py"""
 
@@ -21,6 +22,7 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
 
 class dotdict(dict):
     """DotDict implementation"""
