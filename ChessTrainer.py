@@ -1,7 +1,7 @@
 import chess
 import chess.svg
 import numpy as np
-from ChessBot import ChessBot  # Assuming you have this module for the chess bot
+from ChessBot import ChessBot, from_move, to_move, to_np  # Assuming you have this module for the chess bot
 import pygame
 import sys
 from stockfish import Stockfish
@@ -30,16 +30,6 @@ def get_canonical_form(board: chess.Board, player: chess.Color):
         return board
     else:
         return board.mirror()
-
-
-def from_move(move: chess.Move):
-    return move.from_square * 64 + move.to_square
-
-
-def to_move(action):
-    to_sq = action % 64
-    from_sq = action // 64
-    return chess.Move(from_sq, to_sq)
 
 
 def get_valid_moves(board: chess.Board, player: chess.Color):
@@ -84,13 +74,6 @@ def get_action_prob(canonical_board: chess.Board, valid_moves, move) -> list:
     probs[move_index] = move_strength
 
     return probs
-
-
-def to_np(board: chess.Board):
-    a = [0] * (8 * 8 * 6)
-    for sq, pc in board.piece_map().items():
-        a[sq * 6 + pc.piece_type - 1] = 1 if pc.color else -1
-    return np.array(a)
 
 
 def mirror_move(move: chess.Move):
@@ -340,8 +323,7 @@ def stockfish_vs_bot(bot):
     training_examples = []
     player = 1
     stockfish = Stockfish(path=
-                          r"C:\Users\hibba\Downloads\stockfish-windows-x86-64-avx2\stockfish\stockfish-windows-x86-64"
-                          r"-avx2.exe")
+                          r"C:\Users\sambe\Downloads\stockfish-windows-x86-64-avx2\stockfish\stockfish-windows-x86-64-avx2.exe")
 
     while True:
         canonical_board = get_canonical_form(board, player)

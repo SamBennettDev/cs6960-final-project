@@ -21,7 +21,20 @@ logging.getLogger('').addHandler(console)
 log = logging.getLogger(__name__)
 
 
+def to_move(action):
+    to_sq = action % 64
+    from_sq = int(action / 64)
+    return chess.Move(from_sq, to_sq)
 
+
+def from_move(move):
+    return move.from_square * 64 + move.to_square
+
+def to_np(board):
+    a = [0] * (8 * 8 * 6)
+    for sq, pc in board.piece_map().items():
+        a[sq * 6 + pc.piece_type - 1] = 1 if pc.color else -1
+    return np.array(a)
 
 class ChessBot(object):
     def __init__(self, trainer_name):
@@ -61,16 +74,6 @@ class ChessBot(object):
 
         return best_move
 
-    def to_move(self, action):
-        pi_np, v_np = action
-
-        # Sample a move from the probability distribution
-        sampled_index = np.random.choice(len(pi_np), p=pi_np)
-        to_sq = sampled_index % 64
-        from_sq = int(sampled_index / 64)
-
-        return chess.Move(from_sq, to_sq)
-
     def select_best_move(self, board, legal_moves):
         # Convert the board and legal moves into a format suitable for your model
         board_tensor = self.board_to_tensor(board)
@@ -84,38 +87,32 @@ class ChessBot(object):
         with torch.no_grad():
             pi, v = self.model((board_tensor, valid_tensor))
 
-        # Extract the action values from the output
         pi_np = torch.exp(pi).data.cpu().numpy()[0]
         v_np = v.data.cpu().numpy()[0]
+        translated = []
 
-        # Combine the action values into a tuple
-        action = pi_np, v_np
+        for move in legal_moves:
+            translated.append(from_move(move))
 
-        # Use the action tuple to create a move
-        best_move = self.to_move(action)
+        highest_score = translated[0]
 
-        return best_move
+        for move in translated[1:]:
+            if pi_np[move] > pi_np[highest_score]:
+                highest_score = move
 
-    def from_move(self, move):
-        return move.from_square * 64 + move.to_square
+        return to_move(highest_score)
 
     def moves_to_tensor(self, board):
         acts = [0] * (64 * 64)
         for move in board.legal_moves:
-            acts[self.from_move(move)] = 1
+            acts[from_move(move)] = 1
 
         moves_tensor = torch.FloatTensor(np.array(acts))
 
         return moves_tensor
 
-    def to_np(self, board):
-        a = [0] * (8 * 8 * 6)
-        for sq, pc in board.piece_map().items():
-            a[sq * 6 + pc.piece_type - 1] = 1 if pc.color else -1
-        return np.array(a)
-
     def board_to_tensor(self, board):
-        np_board = self.to_np(board)
+        np_board = to_np(board)
         board_tensor = torch.FloatTensor(np_board)
 
         return board_tensor

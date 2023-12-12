@@ -14,16 +14,16 @@ def runBot(bot, num_games):
 
     for i in range(num_games):
         board = chess.Board()
-        chess_drawer = ChessBoardDrawer(600, 600, board)
+        #chess_drawer = ChessBoardDrawer(600, 600, board)
         while not board.is_game_over():
             if board.turn:  # whites turn
                 bot_move = bot.make_move(board)
                 board.push(bot_move)
-                chess_drawer.update_display()
+                #chess_drawer.update_display()
 
             else:  # blacks turn
                 board.push(RandomBot.move(board))
-                chess_drawer.update_display()
+                #chess_drawer.update_display()
             
         outcome = board.outcome()
         if outcome.winner == chess.WHITE:
@@ -41,5 +41,5 @@ def runBot(bot, num_games):
 
 
 
-untrained = ChessBot("untrained")
-runBot(untrained, 1)
+untrained = ChessBot("stockfish")
+runBot(untrained, 20)
