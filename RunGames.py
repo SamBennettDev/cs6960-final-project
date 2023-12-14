@@ -48,6 +48,7 @@ def randomRuns(num_games=100):
     for bot in results:
         result = results[bot]
         print("%s won %i times, lost %i times, and tied %i times." % (bot, result.count(1),result.count(-1),result.count(0)))
+        print(result)
     return
 
 def runGame(bot1, bot2=None):
@@ -126,6 +127,8 @@ def runStockfish(num_games=100):
     for bot in results:
         result = results[bot]
         print("%s won %i times, lost %i times, and tied %i times." % (bot, result.count(1),result.count(-1),result.count(0)))
+        print(result)
+
     return
 
 
