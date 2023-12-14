@@ -5,11 +5,13 @@ import RandomBot
 import os
 from random import sample
 from ChessBot import ChessBot
+from stockfish import Stockfish
+
 
 
 def randomRuns(num_games=100):
     currentdirect = os.getcwd()
-    dir_list = os.listdir(currentdirect + "//models")
+    dir_list = os.listdir(currentdirect + "//trained")
     num_bots = len(dir_list)
 
     results = {}
@@ -22,12 +24,12 @@ def randomRuns(num_games=100):
     for i in range(num_bots):
         name1 = dir_list[i]
         name1 = name1[0:len(name1)-4]
-        bot1 = ChessBot(name1)
+        bot1 = ChessBot(name1, "trained")
         
         for j in range(i+1,num_bots):
             name2 = dir_list[j]
             name2 = name2[0:len(name2)-4]
-            bot2 = ChessBot(name2)
+            bot2 = ChessBot(name2, "trained")
 
             for game in range(num_games):
                 outcome = runGame(bot1, bot2)
@@ -60,9 +62,14 @@ def runGame(bot1, bot2=None):
         else:  # blacks turn
             if bot2 is None:
                 board.push(RandomBot.move(board))
-            else:
+            if type(bot2) is ChessBot:
                 bot_move = bot2.make_move(board)
                 board.push(bot_move)
+            else:
+                bot2.set_fen_position(board.fen())
+                move = chess.Move.from_uci(bot2.get_best_move())
+                board.push(move)
+                
             #chess_drawer.update_display()
     return board.outcome()
 
@@ -89,16 +96,46 @@ def runBot(bot1, bot2=None, num_games=100):
         print("%s won %i times, lost %i times, and tied %i times." % (bot2.trainer_name, blackWins,whiteWins,draws))
     print(reasonDraw)
 
+def runStockfish(num_games=100):
+    stockfish = Stockfish(path=
+                          r"C:\Users\HP\Downloads\stockfish-windows-x86-64-avx2\stockfish\stockfish-windows-x86-64-avx2.exe")
+    
+    currentdirect = os.getcwd()
+    dir_list = os.listdir(currentdirect + "//trained")
+    num_bots = len(dir_list)
 
+    results = {}
+    
+    for i in range(num_bots):
+        name = dir_list[i]
+        name = name[0:len(name)-4]
+        results[name] = []
+        bot = ChessBot(name, "trained")
+
+        for game in range(num_games):
+                outcome = runGame(bot, stockfish)
+                if outcome.winner == chess.WHITE:
+                    results[name].append(1)
+                elif outcome.winner == chess.BLACK:
+                    results[name].append(-1)
+                else:
+                    results[name].append(0)
+
+                print(name + " vs Stockfish Game #" + str(game) + ": " + str(outcome))
+
+    for bot in results:
+        result = results[bot]
+        print("%s won %i times, lost %i times, and tied %i times." % (bot, result.count(1),result.count(-1),result.count(0)))
+    return
 
 
 def main():
     while True:
-        typeRun = input("Would you like to: \n\t1. Run with two specified bots\n\t2. Run a specified bot against random\n\t3. Run with all possible bots against each other\n\t0. Exit\nPlease enter the number: ")
+        typeRun = input("Would you like to: \n\t1. Run with two specified bots\n\t2. Run a specified bot against random\n\t3. Run with all possible bots against each other\n\t4. Run all bots against stockfish\n\t0. Exit\nPlease enter the number: ")
 
         if typeRun == "1":
             currentdirect = os.getcwd()
-            dir_list = os.listdir(currentdirect + "//models")
+            dir_list = os.listdir(currentdirect + "//trained")
             text = "What two bots would you like to run against each other?\n"
             for i in range(len(dir_list)):
                 text += "\t" + str(i)+ ". " + str(dir_list[i]) + "\n"
@@ -111,8 +148,8 @@ def main():
             choice2 = int(choice[1])
             filename1 = dir_list[choice1]
             filename2 = dir_list[choice2]
-            bot1 = ChessBot(filename1[0:len(filename1)-4])
-            bot2 = ChessBot(filename2[0:len(filename2)-4])
+            bot1 = ChessBot(filename1[0:len(filename1)-4], "trained")
+            bot2 = ChessBot(filename2[0:len(filename2)-4], "trained")
 
             numruns = input("How many runs would you like to do? ")
 
@@ -121,7 +158,7 @@ def main():
         elif typeRun == "2":
             # Initialize your chess bot
             currentdirect = os.getcwd()
-            dir_list = os.listdir(currentdirect + "//models")
+            dir_list = os.listdir(currentdirect + "//trained")
             text = "What bot would you like to run against random?\n"
             for i in range(len(dir_list)):
                 text += "\t" + str(i)+ ". " + str(dir_list[i]) + "\n"
@@ -129,11 +166,17 @@ def main():
             choice = input(text)
             numruns = input("How many runs would you like to do? ")
             filename = dir_list[int(choice)]
-            bot = ChessBot(filename[0:len(filename)-4])
+            bot = ChessBot(filename[0:len(filename)-4], "trained")
             runBot(bot, num_games=int(numruns))
+
         elif typeRun == "3":
             numruns = input("How many runs per matchup would you like to do? ")
             randomRuns(int(numruns))
+
+        elif typeRun == "4":
+            numruns = input("How many runs per matchup would you like to do? ")
+            runStockfish(int(numruns))
+
         else:
             break
 
