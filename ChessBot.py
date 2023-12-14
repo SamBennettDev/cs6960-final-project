@@ -37,7 +37,7 @@ def to_np(board):
     return np.array(a)
 
 class ChessBot(object):
-    def __init__(self, trainer_name):
+    def __init__(self, trainer_name, directory="models"):
         super(ChessBot, self).__init__()
         self.use_cuda = torch.cuda.is_available()
 
@@ -50,7 +50,7 @@ class ChessBot(object):
         self.model = ChessBotModel()
         # check if model exists
         try:
-            self.load_model()
+            self.load_model(directory)
         except:
             self.save_model()
         if self.use_cuda:
@@ -61,8 +61,8 @@ class ChessBot(object):
         print(f"Saving model {self.trainer_name} as {path}.")
         torch.save(self.model.state_dict(), path)
 
-    def load_model(self):
-        path = 'models/' + self.trainer_name + '.pth'
+    def load_model(self, directory):
+        path = directory + '/' + self.trainer_name + '.pth'
         self.model.load_state_dict(torch.load(path))
         self.model.eval()
 
