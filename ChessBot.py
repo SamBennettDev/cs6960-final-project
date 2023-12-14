@@ -79,6 +79,10 @@ class ChessBot(object):
         board_tensor = self.board_to_tensor(board)
         valid_tensor = self.moves_to_tensor(board)
 
+        if self.use_cuda:
+            board_tensor = board_tensor.contiguous().cuda()
+            valid_tensor = valid_tensor.contiguous().cuda()
+
         board_tensor = board_tensor.view(1, 8, 8, 6)
 
         # Use the neural network to predict move values
